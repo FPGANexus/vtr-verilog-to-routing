@@ -345,21 +345,16 @@ class NdMatrix : public NdMatrixBase<T, N> {
  */
 template<typename T>
 class NdMatrix<T, 1> : public NdMatrixBase<T, 1> {
-  private:
-    ///@brief Helper method to check that the access to the matrix is safe.
-    inline void check_access(size_t index) const {
-        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
-        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
-    }
-
   public:
     ///@brief Use the base constructors
     using NdMatrixBase<T, 1>::NdMatrixBase;
 
     ///@brief Access an element
     T& operator[](size_t index) const {
-        check_access(index);
+        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
+        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
+        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
+
         return this->data_[index];
     }
 };
