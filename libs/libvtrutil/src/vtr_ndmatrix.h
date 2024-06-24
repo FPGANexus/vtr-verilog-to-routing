@@ -68,6 +68,13 @@ class NdMatrixProxy {
 ///@brief Base case: 1-dimensional array
 template<typename T>
 class NdMatrixProxy<T, 1> {
+  private:
+    ///@brief Helper method to check that the access to the matrix is safe.
+    inline void check_access(size_t index) const {
+        VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
+        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
+    }
+
   public:
     /**
      * @brief Construct a 1-d matrix proxy object
@@ -85,8 +92,7 @@ class NdMatrixProxy<T, 1> {
 
     ///@brief const [] operator
     const T& operator[](size_t index) const {
-        VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
-        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
+        check_access(index);
 
         //Base case
         return start_[index];
@@ -94,8 +100,10 @@ class NdMatrixProxy<T, 1> {
 
     ///@brief [] operator
     T& operator[](size_t index) {
-        // Call the const version and cast-away constness
-        return const_cast<T&>(const_cast<const NdMatrixProxy<T, 1>*>(this)->operator[](index));
+        check_access(index);
+
+        //Base case
+        return start_[index];
     }
 
     /**
@@ -340,20 +348,25 @@ class NdMatrix : public NdMatrixBase<T, N> {
     //General case
     static_assert(N >= 2, "Minimum dimension 2");
 
+  private:
+    ///@brief Helper method to check that the access to the matrix is safe.
+    inline void check_access(size_t index) const {
+        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
+        VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
+        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
+    }
+
   public:
     ///@brief Use the base constructors
     using NdMatrixBase<T, N>::NdMatrixBase;
 
-  public:
     /**
      * @brief Access an element
      *
      * Returns a proxy-object to allow chained array-style indexing  (N >= 2 case)
      */
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
-        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
+        check_access(index);
 
         // Peel off the first dimension
         return NdMatrixProxy<T, N - 1>(
@@ -368,8 +381,13 @@ class NdMatrix : public NdMatrixBase<T, N> {
      * Returns a proxy-object to allow chained array-style indexing
      */
     NdMatrixProxy<T, N - 1> operator[](size_t index) {
-        //Call the const version, since returned by value don't need to worry about const
-        return const_cast<const NdMatrix<T, N>*>(this)->operator[](index);
+        check_access(index);
+
+        // Peel off the first dimension
+        return NdMatrixProxy<T, N - 1>(
+            this->dim_sizes_.data() + 1,                        //Pass the dimension information
+            this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
+            this->data_.get() + this->dim_strides_[0] * index); //Advance to index in this dimension
     }
 };
 
@@ -380,24 +398,28 @@ class NdMatrix : public NdMatrixBase<T, N> {
  */
 template<typename T>
 class NdMatrix<T, 1> : public NdMatrixBase<T, 1> {
+  private:
+    ///@brief Helper method to check that the access to the matrix is safe.
+    inline void check_access(size_t index) const {
+        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
+        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
+        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
+    }
+
   public:
     ///@brief Use the base constructors
     using NdMatrixBase<T, 1>::NdMatrixBase;
 
-  public:
     ///@brief Access an element (immutable)
     const T& operator[](size_t index) const {
-        VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
-        VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
-
+        check_access(index);
         return this->data_[index];
     }
 
     ///@brief Access an element (mutable)
     T& operator[](size_t index) {
-        //Call the const version, and cast away const-ness
-        return const_cast<T&>(const_cast<const NdMatrix<T, 1>*>(this)->operator[](index));
+        check_access(index);
+        return this->data_[index];
     }
 };
 
