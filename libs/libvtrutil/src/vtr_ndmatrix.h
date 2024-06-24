@@ -41,8 +41,8 @@ class NdMatrixProxy {
 
     NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
 
-    ///@brief const [] operator
-    const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
+    ///@brief [] operator
+    NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
         VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
 
@@ -51,12 +51,6 @@ class NdMatrixProxy {
             dim_sizes_ + 1,                    // Pass the dimension information
             dim_strides_ + 1,                  // Pass the stride for the next dimension
             start_ + dim_strides_[0] * index); // Advance to index in this dimension
-    }
-
-    ///@brief [] operator
-    NdMatrixProxy<T, N - 1> operator[](size_t index) {
-        // Call the const version and cast-away constness
-        return const_cast<const NdMatrixProxy<T, N>*>(this)->operator[](index);
     }
 
   private:
@@ -121,8 +115,7 @@ class NdMatrixProxy<T, 1> {
 
     ///@brief same as above but allow update the value
     T* data() {
-        // Call the const version and cast-away constness
-        return const_cast<T*>(const_cast<const NdMatrixProxy<T, 1>*>(this)->data());
+        return start_;
     }
 
   private:
