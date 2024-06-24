@@ -62,13 +62,6 @@ class NdMatrixProxy {
 ///@brief Base case: 1-dimensional array
 template<typename T>
 class NdMatrixProxy<T, 1> {
-  private:
-    ///@brief Helper method to check that the access to the matrix is safe.
-    inline void check_access(size_t index) const {
-        VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
-        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
-    }
-
   public:
     /**
      * @brief Construct a 1-d matrix proxy object
@@ -84,17 +77,10 @@ class NdMatrixProxy<T, 1> {
 
     NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
 
-    ///@brief const [] operator
-    const T& operator[](size_t index) const {
-        check_access(index);
-
-        //Base case
-        return start_[index];
-    }
-
     ///@brief [] operator
-    T& operator[](size_t index) {
-        check_access(index);
+    T& operator[](size_t index) const {
+        VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
+        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Base case
         return start_[index];
@@ -109,12 +95,7 @@ class NdMatrixProxy<T, 1> {
      * Note that it is the caller's responsibility to use this correctly; care must be taken
      * not to clobber elements in other dimensions
      */
-    const T* data() const {
-        return start_;
-    }
-
-    ///@brief same as above but allow update the value
-    T* data() {
+    T* data() const {
         return start_;
     }
 
@@ -204,14 +185,8 @@ class NdMatrixBase {
         return dim_sizes_[i];
     }
 
-    ///@brief const Flat accessors of NdMatrix
-    const T& get(size_t i) const {
-        VTR_ASSERT_SAFE(i < size_);
-        return data_[i];
-    }
-
     ///@brief Flat accessors of NdMatrix
-    T& get(size_t i) {
+    T& get(size_t i) const {
         VTR_ASSERT_SAFE(i < size_);
         return data_[i];
     }
@@ -382,14 +357,8 @@ class NdMatrix<T, 1> : public NdMatrixBase<T, 1> {
     ///@brief Use the base constructors
     using NdMatrixBase<T, 1>::NdMatrixBase;
 
-    ///@brief Access an element (immutable)
-    const T& operator[](size_t index) const {
-        check_access(index);
-        return this->data_[index];
-    }
-
-    ///@brief Access an element (mutable)
-    T& operator[](size_t index) {
+    ///@brief Access an element
+    T& operator[](size_t index) const {
         check_access(index);
         return this->data_[index];
     }
