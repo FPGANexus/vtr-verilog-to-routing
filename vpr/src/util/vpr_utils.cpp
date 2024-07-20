@@ -434,8 +434,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     return AtomPinId::INVALID();
 }
 
-/* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
- *   clb: Block in which the the sink pin is located on
+/* Return the net pin which drives the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+ *   clb: Block on which the sink pin is located
  *   sink_pb_pin_id: The physical pin index of the sink pin on the block
  *
  *  Returns a tuple containing
@@ -1371,8 +1371,8 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = *cluster_to_atoms(cluster_block_id);
-    for (auto atom_blk_id : cluster_atoms) {
+    const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
+    for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
